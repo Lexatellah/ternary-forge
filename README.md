@@ -1,0 +1,30 @@
+# ternary-forge
+
+Native balanced-ternary arithmetic and neural layers.
+
+Binary is not a law of nature. It is an industrial accident.
+
+In 1958 the Soviet Union built **Setun**, a computer that ran on balanced ternary —
+trits of `-1, 0, +1`. It was cheaper, more reliable, and more elegant than its binary
+rivals. Binary won because of Cold War supply chains, not because it was better.
+
+Balanced ternary is the most efficient integer radix for positional numbering
+(the theoretical optimum is base *e* ≈ 2.718; base 3 is the closest integer).
+Negation is pure inversion — no sign bit, no two's complement. Rounding is truncation.
+
+`ternary-forge` is a native ternary runtime: trit-wise addition with ternary carry,
+shift-and-add multiplication, and a ternary perceptron layer that uses no floating
+point and no dot products.
+
+## Install
+
+    pip install -e ".[dev]"
+
+## Verify
+
+    pytest -q
+    python examples/demo.py
+
+## What this is
+
+A fork in the road. The first stone in a new foundation.

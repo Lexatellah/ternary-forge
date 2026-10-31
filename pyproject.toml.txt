@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ternary-forge"
+version = "0.1.0"
+description = "Native balanced-ternary arithmetic and neural layers. The binary accident ends here."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Ternary Forge" }]
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["ternary_forge*"]
