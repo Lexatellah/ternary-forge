@@ -1,0 +1,13 @@
+README.md
+pyproject.toml
+ternary_forge/__init__.py
+ternary_forge/core.py
+ternary_forge/mnist.py
+ternary_forge/net.py
+ternary_forge/nn.py
+ternary_forge.egg-info/PKG-INFO
+ternary_forge.egg-info/SOURCES.txt
+ternary_forge.egg-info/dependency_links.txt
+ternary_forge.egg-info/requires.txt
+ternary_forge.egg-info/top_level.txt
+tests/test_core.py

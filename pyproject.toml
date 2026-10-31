@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ternary-forge"
-version = "0.1.0"
-description = "Native balanced-ternary arithmetic and neural layers. The binary accident ends here."
+version = "0.2.0"
+description = "Native balanced-ternary arithmetic and ternary-weight neural networks."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Ternary Forge" }]
 license = { text = "MIT" }
+dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
