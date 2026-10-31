@@ -1,4 +1,4 @@
-﻿# ternary-forge
+# ternary-forge
 
 **Native balanced-ternary arithmetic, a ternary neural network, a ternary VM, and a trit-packing file format — in pure Python/NumPy.**
 
@@ -15,7 +15,7 @@ Binary is not a law of nature. It is an industrial accident. This repository is 
 
 ## Install
 
-    pip install -e '.[dev]'
+    pip install ternary-forge
 
 ## Run the proof
 
