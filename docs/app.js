@@ -289,7 +289,7 @@ canvas.addEventListener('pointerup', stop);
 canvas.addEventListener('pointerleave', stop);
 canvas.addEventListener('pointercancel', stop);
 document.getElementById('clear').addEventListener('click', () => {
-  resetCanvas(); digitEl.textContent = '—'; barsEl.innerHTML = '';
+  resetCanvas(); digitEl.textContent = 'â€”'; barsEl.innerHTML = '';
 });
 
 function getPixels() {
@@ -308,7 +308,7 @@ function predict() {
   const pixels = getPixels();
   let ink = 0;
   for (const p of pixels) ink += p;
-  if (ink < 3) { digitEl.textContent = '—'; barsEl.innerHTML = ''; return; }
+  if (ink < 3) { digitEl.textContent = 'â€”'; barsEl.innerHTML = ''; return; }
   const { digit, probs } = model.predict(pixels);
   digitEl.textContent = digit;
   barsEl.innerHTML = '';
@@ -462,9 +462,9 @@ async function resetToPretrained() {
     model.layers[i].setFromPacked(L.trits, L.alpha, L.bias);
   }
   accHistory = [];
-  statEpoch.textContent = '—'; statBatch.textContent = '—';
-  statTrain.textContent = '—'; statTest.textContent = '—';
-  statTime.textContent = '—';
+  statEpoch.textContent = 'â€”'; statBatch.textContent = 'â€”';
+  statTrain.textContent = 'â€”'; statTest.textContent = 'â€”';
+  statTime.textContent = 'â€”';
   statZero.textContent = countZeros() + '%';
   progEl.style.width = '0%';
   drawWeights(); drawAccuracy();
@@ -479,6 +479,9 @@ document.querySelectorAll('.tab').forEach(t => {
 });
 
 function activateTab(name) {
+  if (name === 'train' && model && training && !btnTrain.disabled && accHistory.length === 0) {
+    setTimeout(() => runTraining(), 150);
+  }
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec-' + name));
 }
