@@ -1,19 +1,42 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ternary-forge"
-version = "0.2.0"
-description = "Native balanced-ternary arithmetic and ternary-weight neural networks."
+version = "1.1.1"
+description = "Native balanced-ternary arithmetic, ternary MLP, ternary VM, and trit packing - pure Python/NumPy."
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{ name = "Ternary Forge" }]
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Lexatellah" }]
+keywords = ["ternary", "balanced-ternary", "machine-learning", "neural-network", "quantization", "virtual-machine", "trit"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Software Development :: Interpreters",
+  "Topic :: System :: Hardware",
+]
 dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "build>=1.2", "twine>=6"]
+
+[project.urls]
+Homepage = "https://github.com/Lexatellah/ternary-forge"
+Repository = "https://github.com/Lexatellah/ternary-forge"
+Issues = "https://github.com/Lexatellah/ternary-forge/issues"
+Documentation = "https://github.com/Lexatellah/ternary-forge/blob/main/docs/BINARY_ACCIDENT.md"
 
 [tool.setuptools.packages.find]
 include = ["ternary_forge*"]
