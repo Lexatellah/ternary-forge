@@ -1,0 +1,55 @@
+﻿
+==================================================================
+  TERNARY FORGE -- Reproduce the Paper
+  The Binary Accident, verified in one command
+==================================================================
+
+==================================================================
+  [1/4] Balanced ternary arithmetic
+==================================================================
+  CLAIM:  7 = '+ - +' and -4 = '- -'; negation is pure trit inversion
+  ACTUAL: 7 = +-+,  -4 = --
+  ACTUAL: -7 = -+-  (every trit flipped, no sign bit)
+  RESULT: PASS
+
+
+==================================================================
+  [2/4] Ternary MLP on MNIST (paper: 5 epochs, 784-256-10)
+==================================================================
+  CLAIM:  Test accuracy >= 92% with weights restricted to {-1, 0, +1}
+  Loading MNIST (downloads to data/ on first run)...
+  ACTUAL: data: train=(60000, 784), test=(10000, 784)
+    epoch 1: test_acc = 91.60%
+    epoch 2: test_acc = 92.06%
+    epoch 3: test_acc = 92.62%
+    epoch 4: test_acc = 93.03%
+    epoch 5: test_acc = 93.20%
+  ACTUAL: final test accuracy: 93.20%
+  ACTUAL: weights: 203,530 params @ 1.58 bits = 39.4 KiB (float32: 795.0 KiB, 20.2x larger)
+  RESULT: PASS
+
+
+==================================================================
+  [3/4] Ternary VM -- native NEG and SHL3
+==================================================================
+  CLAIM:  NEG flips all trits in one instruction; SHL3 multiplies by 3
+    r0 =          ++-0+  (100)
+    r0 =          --+0-  (-100)
+    r0 =            +00  (9)
+  ACTUAL: NEG(100) = -100 in one instruction; two SHL3 = 9 in two
+  RESULT: PASS
+
+
+==================================================================
+  [4/4] Trit packing -- 5 trits per byte
+==================================================================
+  CLAIM:  3^5 = 243 < 256, so 5 trits fit in one byte = 99.06% of optimum
+  ACTUAL: 200,000 trits -> 40,000 bytes  (39.1 KiB)
+  ACTUAL: compression vs float32 (800 KB):  20.0x
+  ACTUAL: roundtrip: PASS (bit-exact, verified)
+  RESULT: PASS
+
+==================================================================
+  VERDICT: all 4 claims verified in 14.3s
+  The binary accident is reproducible.
+==================================================================
