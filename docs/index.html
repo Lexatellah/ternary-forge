@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ternary-forge — MNIST in {-1, 0, +1}</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: #0a0a0a; color: #d8d8d8;
+    font-family: ui-monospace, "SF Mono", Consolas, Menlo, monospace;
+    min-height: 100vh;
+  }
+  header { max-width: 1000px; margin: 0 auto 24px; }
+  h1 { color: #00ff88; font-weight: 600; font-size: 22px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h1 .accent { color: #d8d8d8; }
+  p { color: #8a8a8a; font-size: 14px; line-height: 1.6; margin: 4px 0; }
+  code { color: #00ff88; background: #151515; padding: 1px 5px; border-radius: 3px; font-size: 13px; }
+  #status { color: #666; font-size: 13px; display: block; margin-top: 8px; }
+  #status.ok { color: #00ff88; }
+  #status.err { color: #ff5555; }
+  main {
+    max-width: 1000px; margin: 0 auto;
+    display: grid; grid-template-columns: 320px 1fr; gap: 24px;
+  }
+  @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  .panel {
+    background: #111; border: 1px solid #1f1f1f; border-radius: 8px;
+    padding: 16px;
+  }
+  #canvas {
+    width: 100%; aspect-ratio: 1 / 1; max-width: 280px; margin: 0 auto;
+    display: block; background: #000; border-radius: 4px;
+    cursor: crosshair; touch-action: none;
+  }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  button {
+    flex: 1; padding: 10px; background: #1a1a1a; color: #d8d8d8;
+    border: 1px solid #2a2a2a; border-radius: 4px;
+    font-family: inherit; font-size: 13px; cursor: pointer;
+  }
+  button:hover { background: #222; border-color: #333; }
+  .prediction {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+  }
+  .prediction .label { color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; }
+  .prediction .digit {
+    font-size: 64px; color: #00ff88; font-weight: 600; line-height: 1;
+    min-width: 64px;
+  }
+  .bars { display: flex; flex-direction: column; gap: 6px; }
+  .bar { display: grid; grid-template-columns: 20px 1fr 56px; gap: 8px; align-items: center; font-size: 12px; }
+  .bar .label { color: #666; }
+  .bar .track { height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; }
+  .bar .fill { height: 100%; background: #00ff88; transition: width 0.15s ease; }
+  .bar.top .fill { background: #00ffaa; }
+  .bar .pct { color: #666; text-align: right; font-variant-numeric: tabular-nums; }
+  footer {
+    max-width: 1000px; margin: 32px auto 0;
+    color: #444; font-size: 12px;
+    border-top: 1px solid #1a1a1a; padding-top: 16px;
+  }
+  footer a { color: #00ff88; text-decoration: none; }
+  .meta { color: #555; font-size: 12px; margin-top: 12px; line-height: 1.6; }
+  .meta strong { color: #8a8a8a; font-weight: 400; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ternary-forge <span class="accent">/ live</span></h1>
+  <p>Draw a digit. The network recognizes it using <strong>203,530 weights</strong> restricted to
+     <code>-1</code>, <code>0</code>, or <code>+1</code>. No floats in weight storage.</p>
+  <span id="status">Loading weights.trit...</span>
+</header>
+
+<main>
+  <div class="panel">
+    <canvas id="canvas" width="280" height="280"></canvas>
+    <div class="row">
+      <button id="clear">Clear</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="prediction">
+      <span class="label">Prediction</span>
+      <span class="digit" id="digit">—</span>
+    </div>
+    <div class="bars" id="bars"></div>
+    <div class="meta" id="meta"></div>
+  </div>
+</main>
+
+<footer>
+  <a href="https://github.com/Lexatellah/ternary-forge">github.com/Lexatellah/ternary-forge</a>
+  · <a href="https://pypi.org/project/ternary-forge/">pip install ternary-forge</a>
+  · <a href="https://github.com/Lexatellah/ternary-forge/blob/main/docs/BINARY_ACCIDENT.md">the paper</a>
+</footer>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const digitEl = document.getElementById('digit');
+const barsEl = document.getElementById('bars');
+const statusEl = document.getElementById('status');
+const metaEl = document.getElementById('meta');
+
+let model = null;
+let drawing = false;
+let lastX = 0, lastY = 0;
+let lastPredict = 0;
+
+function resetCanvas() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#fff';
+  ctx.fillStyle = '#fff';
+  ctx.lineWidth = 18;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+}
+
+function canvasPoint(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - r.left) * (canvas.width / r.width),
+    y: (e.clientY - r.top) * (canvas.height / r.height),
+  };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  drawing = true;
+  const p = canvasPoint(e);
+  lastX = p.x; lastY = p.y;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, ctx.lineWidth / 2, 0, Math.PI * 2);
+  ctx.fill();
+  predict();
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (!drawing) return;
+  e.preventDefault();
+  const p = canvasPoint(e);
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(p.x, p.y);
+  ctx.stroke();
+  lastX = p.x; lastY = p.y;
+  const now = Date.now();
+  if (now - lastPredict > 60) { lastPredict = now; predict(); }
+});
+
+const stop = () => { drawing = false; predict(); };
+canvas.addEventListener('pointerup', stop);
+canvas.addEventListener('pointerleave', stop);
+canvas.addEventListener('pointercancel', stop);
+
+document.getElementById('clear').addEventListener('click', () => {
+  resetCanvas();
+  digitEl.textContent = '—';
+  barsEl.innerHTML = '';
+});
+
+function getPixels() {
+  const off = document.createElement('canvas');
+  off.width = 28; off.height = 28;
+  const octx = off.getContext('2d');
+  octx.drawImage(canvas, 0, 0, 28, 28);
+  const data = octx.getImageData(0, 0, 28, 28).data;
+  const pixels = new Float32Array(784);
+  for (let i = 0; i < 784; i++) pixels[i] = data[i * 4] / 255;
+  return pixels;
+}
+
+function forward(pixels) {
+  const L0 = model.layers[0], L1 = model.layers[1];
+  const h0 = new Float32Array(L0.n_out);
+  for (let i = 0; i < L0.n_out; i++) {
+    let acc = L0.bias[i];
+    const off = i * L0.n_in;
+    for (let j = 0; j < L0.n_in; j++) {
+      const w = L0.trits[off + j];
+      if (w !== 0) acc += w * L0.alpha * pixels[j];
+    }
+    h0[i] = acc > 0 ? acc : 0;
+  }
+  const out = new Float32Array(L1.n_out);
+  for (let i = 0; i < L1.n_out; i++) {
+    let acc = L1.bias[i];
+    const off = i * L1.n_in;
+    for (let j = 0; j < L1.n_in; j++) {
+      const w = L1.trits[off + j];
+      if (w !== 0) acc += w * L1.alpha * h0[j];
+    }
+    out[i] = acc;
+  }
+  return out;
+}
+
+function softmax(arr) {
+  const m = Math.max(...arr);
+  const e = arr.map(x => Math.exp(x - m));
+  const s = e.reduce((a, b) => a + b, 0);
+  return e.map(x => x / s);
+}
+
+function predict() {
+  if (!model) return;
+  const pixels = getPixels();
+  let ink = 0;
+  for (const p of pixels) ink += p;
+  if (ink < 3) { digitEl.textContent = '—'; barsEl.innerHTML = ''; return; }
+
+  const out = forward(pixels);
+  const probs = softmax(out);
+  let best = 0;
+  for (let i = 1; i < probs.length; i++) if (probs[i] > probs[best]) best = i;
+  digitEl.textContent = best;
+
+  barsEl.innerHTML = '';
+  for (let i = 0; i < probs.length; i++) {
+    const pct = (probs[i] * 100).toFixed(1);
+    const row = document.createElement('div');
+    row.className = 'bar' + (i === best ? ' top' : '');
+    row.innerHTML =
+      '<span class="label">' + i + '</span>' +
+      '<div class="track"><div class="fill" style="width:' + pct + '%"></div></div>' +
+      '<span class="pct">' + pct + '%</span>';
+    barsEl.appendChild(row);
+  }
+}
+
+async function loadModel() {
+  try {
+    const resp = await fetch('weights.trit');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const buf = await resp.arrayBuffer();
+    const dv = new DataView(buf);
+    let pos = 0;
+
+    const magic = new Uint8Array(buf, 0, 4);
+    if (String.fromCharCode.apply(null, magic) !== 'TRIT') throw new Error('bad magic');
+    pos = 4;
+    const version = dv.getUint8(pos); pos += 1;
+    if (version !== 1) throw new Error('unsupported version ' + version);
+    const nLayers = dv.getUint8(pos); pos += 1;
+
+    const layers = [];
+    for (let L = 0; L < nLayers; L++) {
+      const nIn = dv.getUint32(pos, true); pos += 4;
+      const nOut = dv.getUint32(pos, true); pos += 4;
+      const alpha = dv.getFloat32(pos, true); pos += 4;
+      const bias = new Float32Array(nOut);
+      for (let i = 0; i < nOut; i++) { bias[i] = dv.getFloat32(pos, true); pos += 4; }
+      const nTrits = dv.getUint32(pos, true); pos += 4;
+      const nBytes = Math.ceil(nTrits / 5);
+      const packed = new Uint8Array(buf, pos, nBytes); pos += nBytes;
+
+      const trits = new Int8Array(nTrits);
+      let k = 0;
+      for (let b = 0; b < nBytes; b++) {
+        let n = packed[b];
+        for (let t = 0; t < 5 && k < nTrits; t++) {
+          trits[k++] = (n % 3) - 1;
+          n = Math.floor(n / 3);
+        }
+      }
+      layers.push({ n_in: nIn, n_out: nOut, alpha: alpha, bias: bias, trits: trits });
+    }
+    model = { layers: layers };
+
+    const totalTrits = layers.reduce((s, l) => s + l.trits.length, 0);
+    statusEl.textContent = 'Model loaded — ' + totalTrits.toLocaleString() + ' trits in {' + '-1, 0, +1' + '}, ' + (buf.byteLength / 1024).toFixed(1) + ' KiB on disk';
+    statusEl.className = 'ok';
+
+    const z = layers[0].trits.filter ? 0 : 0;
+    const nonzero = layers[0].trits.reduce((s, v) => s + (v !== 0 ? 1 : 0), 0);
+    const sparsity = (1 - nonzero / layers[0].trits.length) * 100;
+    metaEl.innerHTML =
+      '<strong>layer 0:</strong> ' + layers[0].n_in + ' x ' + layers[0].n_out + ' trits' +
+      ' — ' + sparsity.toFixed(1) + '% zeros<br>' +
+      '<strong>layer 1:</strong> ' + layers[1].n_in + ' x ' + layers[1].n_out + ' trits<br>' +
+      '<strong>storage:</strong> ' + (buf.byteLength / 1024).toFixed(1) + ' KiB';
+  } catch (e) {
+    statusEl.textContent = 'Failed to load weights.trit — ' + e.message + ' (serve this page over HTTP, not file://)';
+    statusEl.className = 'err';
+    console.error(e);
+  }
+}
+
+resetCanvas();
+loadModel();
+</script>
+</body>
+</html>
